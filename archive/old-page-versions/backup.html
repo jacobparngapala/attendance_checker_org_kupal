@@ -1,0 +1,119 @@
+function login(event) {
+    event.preventDefault();
+
+    let studentId = document.getElementById('studentId').value.trim().replace(/-/g, "/");
+    let password = document.getElementById('floatingPassword').value.trim();
+
+    if (password.includes("-")) {
+        document.getElementById('message').textContent = 'Incorrect password';
+        document.getElementById('message').style.color = 'red';
+        return;
+    }
+
+    if (!studentId || !password) {
+        document.getElementById('message').textContent = 'Please fill in all fields.';
+        document.getElementById('message').style.color = 'red';
+        return;
+    }
+
+    const isTeacher = studentId.startsWith("T");
+    const refPath = isTeacher ? `Teachers/${studentId}` : `Students/${studentId}`;
+    const userRef = ref(database, refPath);
+
+    get(userRef).then(snapshot => {
+        if (snapshot.exists()) {
+            const userData = snapshot.val();
+            const storedPassword = userData.password.replace(/-/g, "/");
+
+            if (storedPassword === password) {
+                // Log attendance for students and store teacher login
+                if (isTeacher) {
+                    // Store Teacher ID in localStorage
+                    localStorage.setItem("teacherID", studentId);
+                } else {
+                    // Log Student login in the "logins" node
+                    const loginsRef = ref(database, 'logins/');
+                    push(loginsRef, {
+                        id: userData[isTeacher ? 'teacherId' : 'studentId'],
+                        name: userData.name,
+                        timestamp: new Date().toISOString(),
+                        role: isTeacher ? "Teacher" : "Student"
+                    }).then(() => {
+                        console.log(`${isTeacher ? "Teacher" : "Student"} login recorded.`);
+                    }).catch(error => {
+                        console.error("Error recording login:", error);
+                    });
+                }
+
+                showSuccessMessage(userData[isTeacher ? 'teacherId' : 'studentId'], userData.name, isTeacher);
+            } else {
+                showErrorMessage('Incorrect password.');
+            }
+        } else {
+            showErrorMessage(`${isTeacher ? "Teacher" : "Student"} ID not found.`);
+        }
+    }).catch(error => {
+        showErrorMessage('An error occurred. Please try again.');
+        console.error(error);
+    });
+
+}
+
+
+function showSuccessMessage(id, name, isTeacher) {
+    document.getElementById('success-section').style.display = 'block';
+    document.getElementById('login-section').style.display = 'none';
+    document.getElementById('success-field-studentId').textContent = id;
+    document.getElementById('success-field-name').textContent = name;
+    document.getElementById('success-field-dateTime').textContent = new Date().toLocaleString();
+
+    if (!isTeacher) {
+        document.getElementById('redirectionButton').style.display = 'block';
+    }
+
+    setTimeout(() => {
+        if (isTeacher) {
+            window.location.href = "homepage.html"; // Redirect teacher to their page
+        }
+    }, 2000);
+}
+
+function showErrorMessage(message) {
+    document.getElementById('message').textContent = message || 'An error occurred. Please try again later.';
+    document.getElementById('message').style.color = 'red';
+}
+
+// Function to redirect when clicking a class button
+function redirectToClass(teacherID, classID) {
+    window.location.href = `attendance section.html?teacher=${teacherID}&class=${classID}`;
+}
+
+document.getElementById('attendanceForm').addEventListener('submit', login);
+document.getElementById('redirectionButton').addEventListener('click', redirectToClass);
+
+
+
+SF2
+
+function createSF2Header(schoolName, section, month) {
+    const header = [
+        ["School Form 2 Daily Attendance Report of Learners for Senior High School (SF2-SHS)"],
+        ["School Name:", schoolName, "", "", "", "", "", "", "", "Region:", "NCR"],
+        ["Semester:", "1st Semester"],
+        ["Section:", section],
+        ["Month:", month],
+        [""], // Empty row for spacing
+        ["No.", "NAME (Last, First MI.)", "", "Date 1", "Date 2", "Date 3", /* ... more dates ... */, "Total Present", "Total Late", "Total Absent", "Remarks"]
+    ];
+    return header;
+}
+
+// Example usage:
+const school = "University of the East-Caloocan";
+const sectionName = "ICT3 12-AI";
+const currentMonth = "October";
+
+const sf2Header = createSF2Header(school, sectionName, currentMonth);
+
+// Now, let's log the header to the console to see its structure:
+console.log(sf2Header);

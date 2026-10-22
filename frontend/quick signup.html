@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Signup Page</title>
+    <script type="module">
+        // Import Firebase SDK
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-app.js";
+        import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA0hTRuEgjrP9YQ4LwkHcSUf7xkdl9lBgI",
+            authDomain: "attendify12-ai.firebaseapp.com",
+            databaseURL: "https://attendify12-ai-default-rtdb.asia-southeast1.firebasedatabase.app/",
+            projectId: "attendify12-ai",
+            storageBucket: "attendify12-ai.firebasestorage.app",
+            messagingSenderId: "374044642888",
+            appId: "1:374044642888:web:44706986d500af43a0927d"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        function formatDate(inputDate) {
+            const date = new Date(inputDate);
+            const month = String(date.getMonth() + 1).padStart(2, '0'); // Ensure two digits
+            const day = String(date.getDate()).padStart(2, '0'); // Ensure two digits
+            const year = date.getFullYear();
+            return `${month}-${day}-${year}`;
+        }
+
+        window.signup = function () {
+            const studentId = document.getElementById("studentId").value;
+            const name = document.getElementById("name").value;
+            const birthdayRaw = document.getElementById("birthday").value;
+
+            if (!studentId || !name || !birthdayRaw) {
+                alert("Please fill in all fields");
+                return;
+            }
+
+            const birthday = formatDate(birthdayRaw); // Convert to MM-DD-YYYY format
+            const password = birthday; // Password is same as formatted birthday
+
+            const userData = {
+                birthday: birthday,
+                name: name,
+                password: password,
+                studentId: studentId.trim()
+            };
+
+            set(ref(database, `Students/${studentId.trim()}`), userData)
+                .then(() => {
+                    alert("Signup successful!");
+                })
+                .catch((error) => {
+                    alert("Error: " + error.message);
+                });
+        }
+
+        window.importCSV = function (event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const text = e.target.result;
+                const rows = text.split("\n").map(row => row.trim()).filter(row => row);
+                rows.forEach(row => {
+                    const [studentId, name, birthdayRaw] = row.split(",");
+
+                    if (studentId && name && birthdayRaw) {
+                        const birthday = birthdayRaw.trim(); // Use birthday as is
+                        const password = birthday; // Password is same as formatted birthday
+
+                        const userData = {
+                            birthday: birthday,
+                            name: name.trim(),
+                            password: password,
+                            studentId: studentId.trim()
+                        };
+
+                        set(ref(database, `Students/${studentId.trim()}`), userData)
+                            .then(() => console.log(`Imported: ${name}`))
+                            .catch((error) => console.error("Error: ", error.message));
+                    }
+                });
+                alert("CSV Import Complete");
+            };
+            reader.readAsText(file);
+        }
+    </script>
+</head>
+
+<body>
+    <h2>Signup</h2>
+    <input type="number" id="studentId" placeholder="Student ID"><br>
+    <input type="text" id="name" placeholder="Full Name"><br>
+    <input type="date" id="birthday"><br>
+    <button onclick="signup()">Signup</button>
+
+    <h2>Import CSV</h2>
+    <input type="file" accept=".csv" onchange="importCSV(event)">
+    <p>Format: studentId,name,birthday (YYYY-MM-DD)</p>
+</body>
+
+</html>

@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
+    <title>EAST-Y CHECK</title>
+    <link rel="stylesheet" />
+    <style>
+        @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500;600;700&display=swap");
+
+        body {
+            display: flex;
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background-color: #f8f9fa;
+            position: fixed;
+            top: 0;
+            left: 250px; 
+            right: 0;
+            z-index: 1000;
+            transition: left 0.3s ease; 
+        }
+
+        .sidebar {
+            width: 250px;
+            height: 100vh; 
+            position: fixed;
+            top: 0;
+            left: 0;
+            background-color: #343a40;
+            color: white;
+            padding-top: 20px;
+            transition: transform 0.3s ease;
+            transform: translateX(0); 
+        }
+
+        .sidebar.closed {
+            transform: translateX(-100%); 
+        }
+
+        .main-content {
+            margin-left: 250px; 
+            padding: 20px;
+            flex-grow: 1;
+            overflow-y: auto; 
+            height: 100vh; 
+            position: relative;
+            transition: margin-left 0.3s ease; 
+        }
+
+        .main-content.shifted {
+            margin-left: 0; 
+        }
+
+        @media (max-width: 768px) {
+            .navbar {
+                left: 0;
+                right: 0;
+            }
+
+            .sidebar {
+                width: 200px; 
+            }
+
+            .main-content {
+                margin-left: 200px; 
+            }
+        }
+
+        
+        .table-responsive {
+            overflow-x: auto;
+        }
+    </style>
+    <link href="./css/dashboard.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link rel="stylesheet" href="./css/navbar.css">
+    <link rel="stylesheet" href="./css/styles.css">
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar" aria-label="Sidebar Navigation">
+        <div class="menu_content">
+            <ul class="menu_items">
+                <li class="item active">
+                    <a href="Classes student.html" class="nav_link">
+                        <span class="navlink_icon">
+                            <i class="bx bx-list-ul"></i>
+                        </span>
+                        <span class="navlink">Classes</span>
+                    </a>
+                </li>
+            </ul>
+            <ul class="menu_items">
+                <li class="item">
+                    <a href="index.html" class="nav_link" id="logoutButton">
+                        <span class="navlink_icon">
+                            <i class="bx bx-log-out"></i>
+                        </span>
+                        <span class="navlink">Logout</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Navbar -->
+    <nav class="navbar" aria-label="Main Navigation">
+        <div class="logo_item">
+            <i class="bx bx-menu" id="sidebarToggle"></i>
+            <img src="./css/ue-logo.png" alt=""><strong>EAST-Y CHECK</strong>
+        </div>
+        <div class="navbar_content">
+            <i class="bi bi-grid"></i>
+            <i class='bx bx-bell'></i>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="container mt-4">
+            <div class="card">
+                <div class="card-header" style="background-color: #A40000; color: white;">
+                    <h3 class="mb-0">Secretary Attendance Management</ h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped">
+                            <thead class="thead-dark">
+                                <tr>
+                                    <th>Student ID</th>
+                                    <th>Name</th>
+                                    <th>Course</th>
+                                    <th>Status</th>
+                                    <th>Timestamp</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="secretaryAttendanceTable"></tbody>
+                        </table>
+                    </div>
+                    <button class="btn btn-success" id="saveSecretaryAttendance">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap & jQuery Scripts -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js";
+        import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA0hTRuEgjrP9YQ4LwkHcSUf7xkdl9lBgI",
+            authDomain: "attendify12-ai.firebaseapp.com",
+            databaseURL: "https://attendify12-ai-default-rtdb.asia-southeast1.firebasedatabase.app/",
+            projectId: "attendify12-ai",
+            storageBucket: "attendify12-ai.appspot.com",
+            messagingSenderId: "374044642888",
+            appId: "1:374044642888:web:44706986d500af43a0927d"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const teacherId = sessionStorage.getItem("teacherId");
+        const classId = sessionStorage.getItem("classId");
+
+        if (!teacherId || !classId) {
+            alert("No class data found. Please go back and try again.");
+        } else {
+            loadSecretaryAttendance(teacherId, classId);
+        }
+
+        async function loadSecretaryAttendance(teacherId, classId) {
+            const tableBody = document.getElementById("secretaryAttendanceTable");
+            const classPath = `classes/${teacherId}/${classId}/students`;
+            const attendancePath = `attendance/${classId}`;
+
+            const studentsRef = ref(db, classPath);
+            const attendanceRef = ref(db, attendancePath);
+
+            try {
+                const [studentsSnap, attendanceSnap] = await Promise.all([get(studentsRef), get(attendanceRef)]);
+
+                if (studentsSnap.exists()) {
+                    const students = studentsSnap.val();
+                    const attendanceData = attendanceSnap.exists() ? attendanceSnap.val() : {};
+
+                    tableBody.innerHTML = ""; // Clear table
+
+                    Object.values(students).forEach(student => {
+                        const studentAttendance = attendanceData[student.id] || { status: "-", timestamp: "-" };
+
+                        const row = `<tr data-id="${student.id}">
+                            <td>${student.id}</td>
+                            <td>${student.name}</td>
+                            <td>${student.course}</td>
+                            <td>
+                                <select class="form-control attendance-status">
+                                    <option value="-" ${studentAttendance.status === "-" ? "selected" : ""}>-</option>
+                                    <option value="Present" ${studentAttendance.status === "Present" ? "selected" : ""}>Present</option>
+                                    <option value="Late" ${studentAttendance.status === "Late" ? "selected" : ""}>Late</option>
+                                    <option value="Absent" ${studentAttendance.status === "Absent" ? "selected" : ""}>Absent</option>
+                                    <option value="Cutting" ${studentAttendance.status === "Cutting" ? "selected" : ""}>Cutting</option>
+                                </select>
+                            </td>
+                            <td>${studentAttendance.timestamp !== "-" ? new Date(studentAttendance.timestamp).toLocaleString() : "-"}</td>
+                            <td><button class="btn btn-primary update-attendance">Update</button></td>
+                        </tr>`;
+                        tableBody.innerHTML += row;
+                    });
+
+                    attachEventListeners(classId);
+                } else {
+                    tableBody.innerHTML = "<tr><td colspan='6'>No students found</td></tr>";
+                }
+            } catch (error) {
+                console.error("Error fetching attendance:", error);
+            }
+        }
+
+ function attachEventListeners(classId) {
+            document.querySelectorAll(".update-attendance").forEach(button => {
+                button.addEventListener("click", function () {
+                    const row = this.closest("tr");
+                    const studentId = row.getAttribute("data-id");
+                    const status = row.querySelector(".attendance-status").value;
+                    const timestamp = new Date().toISOString();
+
+                    update(ref(db, `attendance/${classId}/${studentId}`), { status, timestamp })
+                        .then(() => {
+                            row.cells[4].textContent = new Date(timestamp).toLocaleString();
+                            alert(`Updated attendance for ${studentId}`);
+                        })
+                        .catch(error => console.error("Error updating attendance:", error));
+                });
+            });
+        }
+
+        document.getElementById('sidebarToggle').addEventListener('click', () => {
+            const sidebar = document.querySelector('.sidebar');
+            const mainContent = document.querySelector('.main-content');
+
+            sidebar.classList.toggle('closed'); 
+            mainContent.classList.toggle('shifted');
+        });
+    </script>
+</body>
+
+</html>
